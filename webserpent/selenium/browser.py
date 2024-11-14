@@ -1,20 +1,43 @@
-"""Class for Browser Functionalities
-"""
+"""Class for Browser Functionalities"""
+
 from logging import Logger
 from typing import Optional
 
 from selenium.webdriver.remote.webdriver import WebDriver
 
+from webserpent.enums import BrowserType
+from webserpent.logger import LOGGER
+from webserpent.selenium.driver_manager import DriverManager
+
+
 class Browser:
-    """The Browser Class
-    """
-    def __init__(self, driver: WebDriver, logger: Optional[Logger]):
-        self._driver = driver
-        self._logger = logger
+    """The Browser Class"""
+
+    def __init__(
+        self,
+        browser_type: BrowserType,
+        headless: bool = True,
+        remote: bool = True,
+        driver_manager: Optional[DriverManager] = None,
+        logger: Optional[Logger] = None,
+    ):
+        """browser class for selenium browser actions.
+
+        Args:
+            browser_type (BrowserType): chrome, firefox, or safari
+            headless (bool, optional): is the browser headless. Defaults to True.
+            remote (bool, optional): is it a remote browser. Defaults to True.
+            driver_manager (Optional[DriverManager], optional): driver manager for returning a driver. Defaults to None.
+            logger (Optional[Logger], optional): logging. Defaults to None.
+        """
+        self._driver_manager = driver_manager or DriverManager()
+        self._driver: WebDriver = self._driver_manager.get_driver(
+            browser_type, headless, remote
+        )
+        self._logger = logger or LOGGER
 
     def refresh(self):
-        """refresh the page
-        """
+        """refresh the page"""
         self._logger.info("Refreshing Browser")
         try:
             self._driver.refresh()
@@ -23,8 +46,7 @@ class Browser:
             raise
 
     def go_back(self):
-        """go back a page
-        """
+        """go back a page"""
         self._logger.info("Going back a page")
         try:
             self._driver.back()
@@ -33,8 +55,7 @@ class Browser:
             raise
 
     def go_forward(self):
-        """for forward a page
-        """
+        """for forward a page"""
         self._logger.info("Going forward a page")
         try:
             self._driver.forward()
