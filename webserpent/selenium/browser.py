@@ -27,7 +27,8 @@ class Browser:
             browser_type (BrowserType): chrome, firefox, or safari
             headless (bool, optional): is the browser headless. Defaults to True.
             remote (bool, optional): is it a remote browser. Defaults to True.
-            driver_manager (Optional[DriverManager], optional): driver manager for returning a driver. Defaults to None.
+            driver_manager (Optional[DriverManager], optional): driver manager 
+                for returning a driver. Defaults to None.
             logger (Optional[Logger], optional): logging. Defaults to None.
         """
         self._driver_manager = driver_manager or DriverManager()

@@ -1,6 +1,11 @@
+"""Module for enums
+"""
+
 from enum import Enum
 
 class BrowserType(Enum):
-    Chrome = 'chrome'
-    Firefox = 'firefox'
-    Safari = 'safari'
+    """Browser choices for selenium driver
+    """
+    CHROME = 'chrome'
+    FIREFOX = 'firefox'
+    SAFARI = 'safari'

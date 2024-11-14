@@ -10,7 +10,7 @@ except FileNotFoundError:
 
 setup(
     name="webserpent",
-    version="0.1.1",
+    version="0.1.2",
     author="Joshua Bowery",
     author_email="joshua@example.com",  # Add your email here for contact
     description="A Python Selenium framework",

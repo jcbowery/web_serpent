@@ -1,2 +1,7 @@
+"""Module for Driver Management
+"""
+
 class DriverManager():
-    pass
+    """Get the selenium driver
+    """
+ 
