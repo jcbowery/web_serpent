@@ -1,52 +1,96 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Python application
+name: CI
 
 on:
   pull_request:
     branches: [ "main" ]
 
-permissions:
-  contents: read
-
 jobs:
-  build:
+
+  lint:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v3
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12' 
 
-      - name: Install dependencies
+      - name: Install Dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pylint
+
+      - name: Run Lint
+        run: pylint webserpent
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
+
+      - name: Install Dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest
+
+  publish-test:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tools
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest build
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install build twine
 
-      - name: Lint with flake8
+      - name: Get current version and set test version
         run: |
-          # Stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          # Extract current version from setup.py or pyproject.toml
+          CURRENT_VERSION=$(grep -Po "(?<=version = \"|version=')[^\"']*" setup.py pyproject.toml 2>/dev/null || echo "0.0.0")
+          # Generate dev version using PR number and run number
+          echo "TEST_VERSION=${CURRENT_VERSION}.dev${GITHUB_RUN_NUMBER}+pr${GITHUB_EVENT_NUMBER}" >> $GITHUB_ENV
 
-      - name: Test with pytest
+      - name: Update version for test
         run: |
-          pytest
+          if [ -f "setup.py" ]; then
+            sed -i "s/version=['\"][^'\"]*['\"]/version='${TEST_VERSION}'/" setup.py
+          fi
+          if [ -f "pyproject.toml" ]; then
+            sed -i "s/version = \"[^\"]*\"/version = \"${TEST_VERSION}\"/" pyproject.toml
+          fi
 
       - name: Build package
+        run: python -m build
+
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python -m build
-        # The package files (wheel and source distribution) will be located in the `dist` directory
-
-      - name: Upload package to GitHub Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: python-package
-          path: dist/
-
+          echo "machine github.com login __token__ password ${GITHUB_TOKEN}" > ~/.netrc
+          twine upload --repository-url https://upload.github.com/${{ github.repository }} dist/*
