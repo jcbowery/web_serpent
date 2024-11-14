@@ -83,10 +83,26 @@ jobs:
       - name: Build package
         run: python -m build
 
-      - name: Publish to TestPyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          TWINE_REPOSITORY_URL: https://test.pypi.org/legacy/
+      - name: Configure PyPI credentials
         run: |
-          twine upload --skip-existing dist/*
+          cat > ~/.pypirc << EOL
+          [distutils]
+          index-servers = 
+              testpypi
+
+          [testpypi]
+          repository = https://test.pypi.org/legacy/
+          username = __token__
+          password = ${{ secrets.TEST_PYPI_API_TOKEN }}
+          EOL
+        env:
+          TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+      - name: Display package content
+        run: |
+          echo "Package files to be uploaded:"
+          ls -l dist/
+
+      - name: Publish to TestPyPI
+        run: |
+          python -m twine upload --verbose --repository testpypi --skip-existing dist/*
