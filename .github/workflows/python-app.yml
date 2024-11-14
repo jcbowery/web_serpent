@@ -17,10 +17,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
+      - name: Set up Python 3.10
         uses: actions/setup-python@v3
         with:
-          python-version: "3.12"
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
@@ -32,12 +32,16 @@ jobs:
         run: |
           # Stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          # Treat all errors as warnings but still fail on errors
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # Make sure the step fails if linting fails
+        continue-on-error: false
 
       - name: Test with pytest
         run: |
-          pytest
+          pytest --maxfail=1 --disable-warnings -q
+        # Fail if any test fails
+        continue-on-error: false
 
       - name: Build package
         run: |
@@ -45,8 +49,10 @@ jobs:
         # The package files (wheel and source distribution) will be located in the `dist` directory
 
       - name: Upload package to GitHub Artifacts
+        if: success()  # Upload the package only if previous steps passed
         uses: actions/upload-artifact@v3
         with:
           name: python-package
           path: dist/
+
 
