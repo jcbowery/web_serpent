@@ -62,6 +62,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install setuptools wheel twine
+          pip install setuptools_scm
 
       - name: Increment version in setup.py
         run: |
