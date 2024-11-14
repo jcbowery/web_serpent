@@ -54,47 +54,50 @@ jobs:
           pytest
 
   publish-test:
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  needs: [lint, test]
+  runs-on: ubuntu-latest
+  permissions:
+    contents: read
+    packages: write
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
 
-      - name: Get current version and set test version
-        run: |
-          # Extract current version from setup.py or pyproject.toml
-          CURRENT_VERSION=$(grep -Po "(?<=version = \"|version=')[^\"']*" setup.py pyproject.toml 2>/dev/null || echo "0.0.0")
-          # Generate dev version using PR number and run number
-          echo "TEST_VERSION=${CURRENT_VERSION}.dev${GITHUB_RUN_NUMBER}+pr${GITHUB_EVENT_NUMBER}" >> $GITHUB_ENV
+    - name: Get current version and set test version
+      run: |
+        CURRENT_VERSION=$(grep -Po "(?<=version = \"|version=')[^\"']*" setup.py pyproject.toml 2>/dev/null || echo "0.0.0")
+        echo "TEST_VERSION=${CURRENT_VERSION}.dev${GITHUB_RUN_NUMBER}+pr${GITHUB_EVENT_NUMBER}" >> $GITHUB_ENV
 
-      - name: Update version for test
-        run: |
-          if [ -f "setup.py" ]; then
-            sed -i "s/version=['\"][^'\"]*['\"]/version='${TEST_VERSION}'/" setup.py
-          fi
-          if [ -f "pyproject.toml" ]; then
-            sed -i "s/version = \"[^\"]*\"/version = \"${TEST_VERSION}\"/" pyproject.toml
-          fi
+    - name: Update version for test
+      run: |
+        if [ -f "setup.py" ]; then
+          sed -i "s/version=['\"][^'\"]*['\"]/version='${TEST_VERSION}'/" setup.py
+        fi
+        if [ -f "pyproject.toml" ]; then
+          sed -i "s/version = \"[^\"]*\"/version = \"${TEST_VERSION}\"/" pyproject.toml
+        fi
 
-      - name: Build package
-        run: python -m build
+    - name: Build package
+      run: python -m build
 
-      - name: Publish to GitHub Packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "machine github.com login __token__ password ${GITHUB_TOKEN}" > ~/.netrc
-          twine upload --repository-url https://upload.github.com/${{ github.repository }} dist/*
+    - name: Configure .pypirc for GitHub Packages
+      run: |
+        echo "[distutils]" > ~/.pypirc
+        echo "index-servers = github" >> ~/.pypirc
+        echo "[github]" >> ~/.pypirc
+        echo "repository: https://upload.github.com/${{ github.repository }}" >> ~/.pypirc
+        echo "username: __token__" >> ~/.pypirc
+        echo "password: ${{ secrets.GITHUB_TOKEN }}" >> ~/.pypirc
+
+    - name: Publish to GitHub Packages
+      run: twine upload --repository github dist/*
