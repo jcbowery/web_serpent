@@ -45,7 +45,15 @@ jobs:
         python -m build
       
     - name: Publish to GitHub Packages
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-package
+        path: dist/*
+        
+    - name: Deploy to GitHub Packages
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        python -m twine upload --repository-url https://upload.ghcr.io/v2 dist/*
+        for file in dist/*; do
+          curl -X PUT -u "username:$GITHUB_TOKEN" -F package=@$file https://upload.ghcr.io/v2/${{ github.repository }}/packages/python/${{ github.event.repository.name }}/
+        done
