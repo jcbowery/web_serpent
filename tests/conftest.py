@@ -10,3 +10,8 @@ def mock_driver():
 def mock_logger():
     logger = MagicMock()
     yield logger
+
+@pytest.fixture
+def mock_driver_manager():
+    dm = MagicMock()
+    yield dm
