@@ -14,7 +14,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12' 
           cache: 'pip'
 
       - name: Install Dependencies
@@ -62,33 +62,16 @@ jobs:
       - name: Install dependencies
         run: |
           pip install setuptools wheel twine
-          pip install setuptools_scm
-
-      - name: Increment version in setup.py
-        run: |
-          # Extract the current version from setup.py
-          VERSION=$(python -c "from setuptools_scm import get_version; print(get_version())")
-          
-          # Increment the version (you can modify this to increment major/minor/patch as needed)
-          NEW_VERSION=$(echo $VERSION | awk -F. -v OFS=. '{$NF++;print}')
-          
-          # Replace the version in setup.py
-          sed -i "s/version=\"$VERSION\"/version=\"$NEW_VERSION\"/" setup.py
-
-      - name: Commit version bump
-        run: |
-          git config --global user.email "youremail@example.com"
-          git config --global user.name "Your Name"
-          git add setup.py
-          git commit -m "Bump version to $NEW_VERSION"
-          git push
 
       - name: Build wheel
         run: python setup.py sdist bdist_wheel
+
+      - name: List dist directory
+        run: ls dist/
 
       - name: Upload to Test PyPI
         env:
           TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
         run: |
-          python3 -m twine upload --repository testpypi dist/*
+          python3 -m twine upload --repository testpypi --verbose dist/*
